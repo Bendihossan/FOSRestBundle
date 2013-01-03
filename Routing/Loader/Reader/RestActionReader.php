@@ -158,7 +158,7 @@ class RestActionReader
             $resources[] = null;
         }
 
-        $routeName = $httpMethod.$this->generateRouteName($resources);
+        $routeName = $httpMethod.$this->generateRouteName($resources, $method);
         $urlParts  = $this->generateUrlParts($resources, $arguments, $httpMethod);
 
         // if passed method is not valid HTTP method then it's either
@@ -297,14 +297,23 @@ class RestActionReader
      * Generates route name from resources list.
      *
      * @param array $resources
+     * @param \ReflectionMethod $method
      *
      * @return string
      */
-    private function generateRouteName(array $resources)
+    private function generateRouteName(array $resources, \ReflectionMethod $method)
     {
         $routeName = '';
         foreach ($resources as $resource) {
             if (null !== $resource) {
+                // Checks if the resource is an uncountable word and if the method call is a collection get action.
+                if ($method->name == 'cgetAction'
+                    && true == in_array(strtolower($resource), Pluralization::$uncountables)
+                ) {
+                    // If both are true then we add '_collection' to the route name to
+                    // avoid a potential duplicate with the get action for a single resource.
+                    $routeName .= '_collection';
+                }
                 $routeName .= '_' . basename($resource);
             }
         }
